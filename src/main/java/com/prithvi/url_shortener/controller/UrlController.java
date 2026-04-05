@@ -18,9 +18,11 @@ public class UrlController { //class name
     private UrlService service;
 
     @PostMapping("/shorten")
-    public String shorten(@RequestBody String longUrl) {
+    public ResponseEntity<String> shortenUrl(@RequestBody UrlRequest longUrl) {
+        String shortCode = service.createShortUrl(longUrl.getLongUrl()); //requesting for the url from the service class
+        return ResponseEntity.ok(shortCode);
 
-        return service.shortenUrl(longUrl);
+       // return service.shortenUrl(longUrl);
     } //this shortens the url
 
     @GetMapping("/{shortCode}")
@@ -40,6 +42,11 @@ public class UrlController { //class name
         return ResponseEntity.ok("Updated Successfully");
     }//converts the JSON to object
 
+    @DeleteMapping("/{shortCode}")
+    public ResponseEntity<Void> deleteUrl(@PathVariable String shortCode){
+        service.deleteUrl(shortCode);
+        return ResponseEntity.noContent().build();
+    }
 
 
 }

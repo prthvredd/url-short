@@ -37,4 +37,7 @@ public class Url {
     public void setLongUrl(String longUrl) {
         this.longUrl = longUrl;
     }
+
+    public void getLongUrl(String longUrl) {
+    }
 }

@@ -22,6 +22,9 @@ public class UrlService {
     @Autowired
     private UrlRepository repository;
     // Spring injects repository here
+    private String generateShortCode(){
+        return UUID.randomUUID().toString().substring(0,6);
+    }
 
     public String shortenUrl(String longUrl) {
         String shortCode = UUID.randomUUID().toString().substring(0, 8);
@@ -50,5 +53,20 @@ public class UrlService {
         Url url = repository.findByShortCode(shortCode).orElseThrow(() -> new RuntimeException("Short Code not Found"));
         url.setLongUrl(longUrl);
         repository.save(url);
+    }
+    public String createShortUrl(String longUrl){
+        String shortCode = generateShortCode();
+        Url mapping = new Url();
+        mapping.setShortCode(shortCode);
+        mapping.getLongUrl(longUrl);
+        repository.save(mapping);
+        return shortCode;
+    }
+    public String deleteUrl(String shortCode){
+        Url mapping = repository.findByShortCode(shortCode)
+                .orElseThrow(() -> new RuntimeException("Not found"));
+                repository.delete(mapping);
+
+        return shortCode;
     }
 }
