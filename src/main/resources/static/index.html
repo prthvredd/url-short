@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URL Shortener</title>
+    <style>
+        :root {
+            color-scheme: dark;
+            --bg: #06070b;
+            --ink: #f2efe8;
+            --muted: #9ea4b2;
+            --surface: rgba(10, 13, 20, 0.8);
+            --surface-strong: rgba(17, 22, 32, 0.96);
+            --line: rgba(206, 179, 122, 0.15);
+            --accent: #c8a86c;
+            --accent-deep: #8c6a34;
+            --accent-soft: rgba(200, 168, 108, 0.12);
+            --glow: rgba(132, 199, 255, 0.16);
+            --success: #7dd3a6;
+            --error: #ff7a7a;
+            --shadow: 0 30px 90px rgba(0, 0, 0, 0.6);
+            --shadow-soft: 0 18px 44px rgba(0, 0, 0, 0.35);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            padding: 28px;
+            overflow-x: hidden;
+            font-family: Garamond, Georgia, "Times New Roman", serif;
+            color: var(--ink);
+            background:
+                radial-gradient(circle at 12% 18%, rgba(200, 168, 108, 0.16), transparent 22%),
+                radial-gradient(circle at 88% 22%, rgba(81, 136, 173, 0.12), transparent 24%),
+                radial-gradient(circle at 75% 80%, rgba(140, 106, 52, 0.16), transparent 20%),
+                linear-gradient(145deg, #05060a 0%, #090d14 45%, #111620 100%);
+        }
+
+        body::before,
+        body::after {
+            content: "";
+            position: fixed;
+            inset: auto;
+            border-radius: 999px;
+            filter: blur(10px);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        body::before {
+            width: 220px;
+            height: 220px;
+            left: -60px;
+            top: 8%;
+            background: rgba(200, 168, 108, 0.12);
+            animation: drift 12s ease-in-out infinite;
+        }
+
+        body::after {
+            width: 280px;
+            height: 280px;
+            right: -90px;
+            bottom: 4%;
+            background: rgba(81, 136, 173, 0.1);
+            animation: drift 16s ease-in-out infinite reverse;
+        }
+
+        .shell {
+            position: relative;
+            z-index: 1;
+            min-height: calc(100vh - 56px);
+            display: grid;
+            place-items: center;
+        }
+
+        .card {
+            position: relative;
+            width: min(100%, 1240px);
+            display: grid;
+            grid-template-columns: minmax(0, 1.2fr) minmax(360px, 0.8fr);
+            overflow: hidden;
+            border: 1px solid rgba(200, 168, 108, 0.16);
+            border-radius: 30px;
+            background: var(--surface);
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(10px);
+        }
+
+        .card::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                linear-gradient(120deg, transparent 0%, rgba(200, 168, 108, 0.05) 32%, transparent 60%),
+                repeating-linear-gradient(
+                    135deg,
+                    transparent 0,
+                    transparent 18px,
+                    rgba(255, 255, 255, 0.015) 18px,
+                    rgba(255, 255, 255, 0.015) 19px
+                );
+            pointer-events: none;
+        }
+
+        .panel {
+            padding: 38px;
+        }
+
+        .workspace {
+            display: grid;
+            grid-template-rows: auto auto;
+            min-width: 0;
+        }
+
+        .hero {
+            position: relative;
+            background:
+                linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01)),
+                radial-gradient(circle at top left, rgba(200, 168, 108, 0.08), transparent 38%),
+                linear-gradient(140deg, rgba(81, 136, 173, 0.08), transparent 55%);
+        }
+
+        .hero::after {
+            content: "";
+            position: absolute;
+            width: 280px;
+            height: 280px;
+            right: -90px;
+            top: -80px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(200, 168, 108, 0.18), transparent 66%);
+        }
+
+        .form-panel {
+            background:
+                linear-gradient(180deg, rgba(15, 19, 28, 0.92), rgba(10, 13, 20, 0.98));
+            border-top: 1px solid rgba(200, 168, 108, 0.12);
+        }
+
+        .analytics-panel {
+            position: relative;
+            background:
+                linear-gradient(180deg, rgba(11, 15, 22, 0.96), rgba(8, 10, 16, 0.98));
+            border-left: 1px solid rgba(200, 168, 108, 0.12);
+            min-width: 0;
+        }
+
+        .eyebrow {
+            margin: 0 0 8px;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: var(--accent);
+        }
+
+        h1 {
+            margin: 0 0 14px;
+            font-size: clamp(2.6rem, 5vw, 4.6rem);
+            line-height: 0.95;
+            letter-spacing: -0.04em;
+        }
+
+        .subtitle {
+            max-width: 28rem;
+            margin: 0 0 28px;
+            color: var(--muted);
+            font-size: 1rem;
+            line-height: 1.5;
+            text-shadow: 0 0 18px rgba(0, 0, 0, 0.35);
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
+            margin-top: 28px;
+        }
+
+        .feature {
+            padding: 16px;
+            border: 1px solid var(--line);
+            border-radius: 20px;
+            background: linear-gradient(180deg, rgba(18, 23, 33, 0.8), rgba(10, 13, 20, 0.85));
+            box-shadow: var(--shadow-soft);
+            transform: translateY(16px);
+            opacity: 0;
+            animation: rise 0.8s ease forwards;
+        }
+
+        .feature:nth-child(2) {
+            animation-delay: 0.1s;
+        }
+
+        .feature:nth-child(3) {
+            animation-delay: 0.2s;
+        }
+
+        .feature:nth-child(4) {
+            animation-delay: 0.3s;
+        }
+
+        .feature-kicker {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            background: linear-gradient(135deg, rgba(200, 168, 108, 0.16), rgba(81, 136, 173, 0.12));
+            border: 1px solid rgba(200, 168, 108, 0.18);
+            color: var(--accent);
+            font-weight: 700;
+            font-size: 0.9rem;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            box-shadow: inset 0 0 20px rgba(200, 168, 108, 0.05);
+        }
+
+        .feature h2 {
+            margin: 0 0 6px;
+            font-size: 1rem;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            color: #f5f1e9;
+        }
+
+        .feature p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 0.92rem;
+            line-height: 1.45;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .form-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .form-header h2 {
+            margin: 4px 0 6px;
+            font-size: 1.75rem;
+            line-height: 1.05;
+        }
+
+        .form-copy {
+            margin: 0;
+            color: var(--muted);
+            font-size: 0.95rem;
+            line-height: 1.5;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .badge {
+            flex: 0 0 auto;
+            padding: 10px 12px;
+            border-radius: 999px;
+            background: rgba(200, 168, 108, 0.08);
+            border: 1px solid var(--line);
+            font-size: 0.74rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            color: var(--accent);
+        }
+
+        label {
+            display: block;
+            margin-bottom: 10px;
+            font-size: 0.92rem;
+            font-weight: 600;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        input {
+            width: 100%;
+            border: 1px solid rgba(200, 168, 108, 0.12);
+            border-radius: 18px;
+            padding: 16px 18px;
+            font-size: 1rem;
+            color: var(--ink);
+            background: var(--surface-strong);
+            outline: none;
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.04),
+                0 0 0 1px transparent;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+        }
+
+        input:focus {
+            border-color: rgba(200, 168, 108, 0.75);
+            box-shadow:
+                0 0 0 5px rgba(200, 168, 108, 0.08),
+                0 0 28px rgba(81, 136, 173, 0.08);
+            transform: translateY(-1px);
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .hint {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            align-self: center;
+            padding: 0 14px;
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--line);
+            color: var(--muted);
+            font-size: 0.86rem;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        button {
+            position: relative;
+            border: 0;
+            border-radius: 18px;
+            padding: 16px 22px;
+            font-size: 1rem;
+            font-weight: 700;
+            color: #100d08;
+            cursor: pointer;
+            background:
+                linear-gradient(135deg, #d5b57b, #8c6a34);
+            transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease, filter 0.2s ease;
+            box-shadow:
+                0 18px 34px rgba(0, 0, 0, 0.34),
+                inset 0 1px 0 rgba(255, 255, 255, 0.28);
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        button:hover {
+            transform: translateY(-2px) scale(1.01);
+            filter: saturate(1.04);
+        }
+
+        button:disabled {
+            cursor: wait;
+            opacity: 0.7;
+            transform: none;
+        }
+
+        .button-label,
+        .button-spinner {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .button-spinner {
+            display: none;
+        }
+
+        button.loading .button-label {
+            display: none;
+        }
+
+        button.loading .button-spinner {
+            display: inline-flex;
+        }
+
+        .spinner-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: currentColor;
+            animation: pulse 0.9s ease-in-out infinite;
+        }
+
+        .spinner-dot:nth-child(2) {
+            animation-delay: 0.12s;
+        }
+
+        .spinner-dot:nth-child(3) {
+            animation-delay: 0.24s;
+        }
+
+        .status {
+            min-height: 48px;
+            display: flex;
+            align-items: center;
+            margin-top: 16px;
+            padding: 14px 16px;
+            border: 1px solid transparent;
+            border-radius: 18px;
+            font-size: 0.92rem;
+            color: var(--muted);
+            background: rgba(255, 255, 255, 0.03);
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .status.error {
+            color: var(--error);
+            border-color: rgba(255, 122, 122, 0.18);
+            background: rgba(255, 122, 122, 0.08);
+        }
+
+        .status.success {
+            color: var(--success);
+            border-color: rgba(125, 211, 166, 0.16);
+            background: rgba(125, 211, 166, 0.08);
+        }
+
+        .result {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 24px;
+            border: 1px solid var(--line);
+            background:
+                linear-gradient(180deg, rgba(15, 19, 28, 0.92), rgba(11, 15, 22, 0.86));
+            box-shadow: var(--shadow-soft);
+            opacity: 0;
+            transform: translateY(14px);
+            pointer-events: none;
+            transition: opacity 0.25s ease, transform 0.25s ease;
+        }
+
+        .result.visible {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+
+        .result-title {
+            margin: 0 0 8px;
+            font-size: 0.82rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--muted);
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .result-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 10px;
+        }
+
+        .result a {
+            flex: 1 1 auto;
+            color: #93c9ff;
+            font-weight: 700;
+            text-decoration: none;
+            overflow-wrap: anywhere;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .result a:hover {
+            text-decoration: underline;
+        }
+
+        .copy-button {
+            flex: 0 0 auto;
+            padding: 12px 14px;
+            border-radius: 14px;
+            border: 1px solid var(--line);
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--ink);
+            cursor: pointer;
+            box-shadow: none;
+            font-size: 0.88rem;
+            font-weight: 700;
+        }
+
+        .copy-button:hover {
+            transform: translateY(-1px);
+            background: rgba(200, 168, 108, 0.08);
+            filter: none;
+        }
+
+        .copy-button.done {
+            color: var(--success);
+            border-color: rgba(22, 101, 52, 0.18);
+            background: rgba(22, 101, 52, 0.08);
+        }
+
+        .mini-stats {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+            margin-top: 22px;
+        }
+
+        .dashboard-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 14px;
+        }
+
+        .dashboard-head h3 {
+            margin: 0;
+            font-size: 1.05rem;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .dashboard-note {
+            margin: 0;
+            color: var(--muted);
+            font-size: 0.84rem;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .dashboard-list {
+            display: grid;
+            gap: 12px;
+            max-height: 720px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        .dashboard-empty {
+            padding: 18px;
+            border: 1px dashed var(--line);
+            border-radius: 18px;
+            color: var(--muted);
+            background: rgba(255, 255, 255, 0.02);
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .dashboard-card {
+            padding: 18px;
+            border-radius: 20px;
+            border: 1px solid var(--line);
+            background: linear-gradient(180deg, rgba(15, 19, 28, 0.88), rgba(10, 13, 20, 0.94));
+            box-shadow: var(--shadow-soft);
+        }
+
+        .dashboard-url {
+            display: block;
+            margin-bottom: 10px;
+            color: #93c9ff;
+            font-weight: 700;
+            text-decoration: none;
+            overflow-wrap: anywhere;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .dashboard-url:hover {
+            text-decoration: underline;
+        }
+
+        .dashboard-original {
+            margin: 0 0 14px;
+            color: var(--muted);
+            font-size: 0.9rem;
+            line-height: 1.45;
+            overflow-wrap: anywhere;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .dashboard-stats {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .dashboard-stat {
+            padding: 12px 14px;
+            border-radius: 16px;
+            border: 1px solid var(--line);
+            background: rgba(255, 255, 255, 0.03);
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .dashboard-stat strong {
+            display: block;
+            margin-bottom: 4px;
+            font-size: 0.98rem;
+            color: #f5f1e9;
+        }
+
+        .dashboard-stat span {
+            color: var(--muted);
+            font-size: 0.8rem;
+        }
+
+        .stat {
+            padding: 14px;
+            border-radius: 18px;
+            border: 1px solid var(--line);
+            background: rgba(255, 255, 255, 0.03);
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .stat strong {
+            display: block;
+            margin-bottom: 4px;
+            font-size: 1rem;
+            color: #f5f1e9;
+        }
+
+        .stat span {
+            color: var(--muted);
+            font-size: 0.82rem;
+        }
+
+        @keyframes rise {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes pulse {
+            0%, 80%, 100% {
+                transform: scale(0.7);
+                opacity: 0.65;
+            }
+            40% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        @keyframes drift {
+            0%, 100% {
+                transform: translateY(0px);
+            }
+            50% {
+                transform: translateY(20px);
+            }
+        }
+
+        @media (max-width: 900px) {
+            .card {
+                grid-template-columns: 1fr;
+            }
+
+            .analytics-panel {
+                border-left: 0;
+                border-top: 1px solid rgba(200, 168, 108, 0.12);
+            }
+        }
+
+        @media (max-width: 640px) {
+            body {
+                padding: 16px;
+            }
+
+            .card {
+                border-radius: 28px;
+            }
+
+            .panel {
+                padding: 24px;
+            }
+
+            .feature-grid,
+            .mini-stats,
+            .controls,
+            .dashboard-stats {
+                grid-template-columns: 1fr;
+            }
+
+            .form-header {
+                flex-direction: column;
+            }
+
+            .result-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+    </style>
+</head>
+<body>
+<main class="shell">
+    <section class="card">
+        <div class="workspace">
+            <div class="panel hero">
+                <p class="eyebrow">URL Shortener</p>
+                <h1>Clean short links that look ready to ship.</h1>
+                <p class="subtitle">
+                    Generate compact branded-looking links, resolve them through Redis-backed caching,
+                    and keep the creation flow fast without losing observability.
+                </p>
+
+                <div class="feature-grid">
+                    <article class="feature">
+                        <div class="feature-kicker">01</div>
+                        <h2>Sharper short codes</h2>
+                        <p>Each URL gets a compact seven-character code designed to read cleaner than a UUID fragment.</p>
+                    </article>
+                    <article class="feature">
+                        <div class="feature-kicker">02</div>
+                        <h2>Separate analytics lane</h2>
+                        <p>The dashboard sits on its own right-side panel so creation and monitoring do not compete for space.</p>
+                    </article>
+                    <article class="feature">
+                        <div class="feature-kicker">03</div>
+                        <h2>Cache-first redirects</h2>
+                        <p>Redis handles fast URL lookup, redirect analytics, and rate-limiting state.</p>
+                    </article>
+                    <article class="feature">
+                        <div class="feature-kicker">04</div>
+                        <h2>Expiry aware</h2>
+                        <p>Links can expire and the dashboard shows a live countdown for each record.</p>
+                    </article>
+                </div>
+            </div>
+
+            <div class="panel form-panel">
+                <div class="form-header">
+                    <div>
+                        <p class="eyebrow">Create Link</p>
+                        <h2>Generate a short URL</h2>
+                        <p class="form-copy">Submit a long URL and generate a cleaner short link with a compact unique code.</p>
+                    </div>
+                    <div class="badge">Service Online</div>
+                </div>
+
+                <label for="longUrl">Long URL</label>
+                <input id="longUrl" type="url" placeholder="https://example.com/very/long/link" autocomplete="off">
+
+                <div class="controls">
+                    <button id="shortenButton" type="button">
+                        <span class="button-label">Shorten URL</span>
+                        <span class="button-spinner">
+                            <span class="spinner-dot"></span>
+                            <span class="spinner-dot"></span>
+                            <span class="spinner-dot"></span>
+                        </span>
+                    </button>
+                    <div class="hint">Press Enter to submit</div>
+                </div>
+
+                <div id="status" class="status" aria-live="polite">Ready when you are.</div>
+
+                <section id="result" class="result" aria-live="polite">
+                    <p class="result-title">Short URL</p>
+                    <div class="result-row">
+                        <a id="shortUrlLink" href="#" target="_blank" rel="noopener noreferrer"></a>
+                        <button id="copyButton" class="copy-button" type="button">Copy</button>
+                    </div>
+
+                    <div class="mini-stats">
+                        <div class="stat">
+                            <strong id="domainStat">trim.ly</strong>
+                            <span>Display Host</span>
+                        </div>
+                        <div class="stat">
+                            <strong id="codeStat">-</strong>
+                            <span>Short Code</span>
+                        </div>
+                        <div class="stat">
+                            <strong id="protocolStat">http</strong>
+                            <span>Target Protocol</span>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+
+        <aside class="panel analytics-panel" aria-live="polite">
+            <section class="dashboard">
+                <div class="dashboard-head">
+                    <div>
+                        <h3>Analytics Dashboard</h3>
+                        <p class="dashboard-note">Each short URL with display link, source URL, Redis clicks, and expiry state.</p>
+                    </div>
+                    <button id="refreshAnalyticsButton" class="copy-button" type="button">Refresh</button>
+                </div>
+                <div id="dashboardList" class="dashboard-list">
+                    <div class="dashboard-empty">No short URLs yet.</div>
+                </div>
+            </section>
+        </aside>
+    </section>
+</main>
+
+<script>
+    const longUrlInput = document.getElementById("longUrl");
+    const shortenButton = document.getElementById("shortenButton");
+    const status = document.getElementById("status");
+    const result = document.getElementById("result");
+    const shortUrlLink = document.getElementById("shortUrlLink");
+    const copyButton = document.getElementById("copyButton");
+    const domainStat = document.getElementById("domainStat");
+    const codeStat = document.getElementById("codeStat");
+    const protocolStat = document.getElementById("protocolStat");
+    const refreshAnalyticsButton = document.getElementById("refreshAnalyticsButton");
+    const dashboardList = document.getElementById("dashboardList");
+    let appBaseUrl = window.location.origin;
+    let displayBaseUrl = "trim.ly";
+    let analyticsRefreshTimer = null;
+
+    function setStatus(message, tone) {
+        status.textContent = message;
+        status.classList.toggle("error", tone === "error");
+        status.classList.toggle("success", tone === "success");
+    }
+
+    function buildShortUrl(shortCode) {
+        return new URL("/" + shortCode, appBaseUrl).toString();
+    }
+
+    function buildDisplayShortUrl(shortCode) {
+        return `${displayBaseUrl.replace(/\/$/, "")}/${shortCode}`;
+    }
+
+    function resetCopyButton() {
+        copyButton.textContent = "Copy";
+        copyButton.classList.remove("done");
+    }
+
+    function renderResult(shortUrl, shortCode) {
+        const shortUrlObject = new URL(shortUrl);
+        shortUrlLink.href = shortUrl;
+        shortUrlLink.textContent = buildDisplayShortUrl(shortCode);
+        domainStat.textContent = displayBaseUrl.replace(/^https?:\/\//, "");
+        codeStat.textContent = shortCode;
+        protocolStat.textContent = shortUrlObject.protocol.replace(":", "");
+        result.classList.add("visible");
+        resetCopyButton();
+    }
+
+    async function loadAppConfig() {
+        try {
+            const response = await fetch("/api/config");
+            if (!response.ok) {
+                return;
+            }
+            const config = await response.json();
+            if (config && config.baseUrl) {
+                appBaseUrl = config.baseUrl;
+            }
+            if (config && config.displayBaseUrl) {
+                displayBaseUrl = config.displayBaseUrl;
+            }
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    function formatCreatedAt(value) {
+        if (!value) {
+            return "Not available";
+        }
+
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) {
+            return value;
+        }
+
+        return date.toLocaleString();
+    }
+
+    function formatExpiryCountdown(value) {
+        if (!value) {
+            return "No expiry";
+        }
+
+        const expiresAt = new Date(value);
+        if (Number.isNaN(expiresAt.getTime())) {
+            return value;
+        }
+
+        const diffMs = expiresAt.getTime() - Date.now();
+        if (diffMs <= 0) {
+            return "Expired";
+        }
+
+        const totalSeconds = Math.floor(diffMs / 1000);
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+        return `${hours}h ${minutes}m ${seconds}s left`;
+    }
+
+    function renderDashboard(items) {
+        if (!Array.isArray(items) || items.length === 0) {
+            dashboardList.innerHTML = '<div class="dashboard-empty">No short URLs yet.</div>';
+            return;
+        }
+
+        dashboardList.innerHTML = items.map(function (item) {
+            const shortUrl = buildShortUrl(item.shortCode);
+            const displayShortUrl = buildDisplayShortUrl(item.shortCode);
+            return `
+                <article class="dashboard-card">
+                    <a class="dashboard-url" href="${shortUrl}" target="_blank" rel="noopener noreferrer">${displayShortUrl}</a>
+                    <p class="dashboard-original">${item.longUrl}</p>
+                    <div class="dashboard-stats">
+                        <div class="dashboard-stat">
+                            <strong>${item.redisClickCount ?? 0}</strong>
+                            <span>Redis Click Count</span>
+                        </div>
+                        <div class="dashboard-stat">
+                            <strong>${formatCreatedAt(item.createdAt)}</strong>
+                            <span>Created Time</span>
+                        </div>
+                        <div class="dashboard-stat">
+                            <strong>${formatExpiryCountdown(item.expiresAt)}</strong>
+                            <span>Expiry Timer</span>
+                        </div>
+                    </div>
+                </article>
+            `;
+        }).join("");
+    }
+
+    async function loadAnalytics() {
+        try {
+            const response = await fetch("/api/analytics/query", {
+                method: "POST"
+            });
+            if (!response.ok) {
+                throw new Error("Analytics request failed with status " + response.status);
+            }
+            const body = await response.text();
+            const analytics = body ? JSON.parse(body) : [];
+            renderDashboard(analytics);
+        } catch (error) {
+            console.error(error);
+            dashboardList.innerHTML = '<div class="dashboard-empty">Could not load analytics right now.</div>';
+        }
+    }
+
+    async function handleShorten() {
+        const longUrl = longUrlInput.value.trim();
+
+        if (!longUrl) {
+            setStatus("Enter a URL first.", "error");
+            result.classList.remove("visible");
+            return;
+        }
+
+        shortenButton.disabled = true;
+        shortenButton.classList.add("loading");
+        setStatus("Creating short URL...", "");
+
+        try {
+            const response = await fetch("/shorten", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ longUrl })
+            });
+
+            if (!response.ok) {
+                throw new Error("Request failed with status " + response.status);
+            }
+
+            const shortCode = (await response.text()).trim();
+            const shortUrl = buildShortUrl(shortCode);
+
+            renderResult(shortUrl, shortCode);
+            await loadAnalytics();
+            setStatus("Short URL created. You can open it or copy it now.", "success");
+        } catch (error) {
+            console.error(error);
+            result.classList.remove("visible");
+            setStatus("Could not shorten the URL. Check that the backend is running.", "error");
+        } finally {
+            shortenButton.disabled = false;
+            shortenButton.classList.remove("loading");
+        }
+    }
+
+    async function copyShortUrl() {
+        if (!shortUrlLink.textContent) {
+            return;
+        }
+
+        try {
+            await navigator.clipboard.writeText(shortUrlLink.textContent);
+            copyButton.textContent = "Copied";
+            copyButton.classList.add("done");
+            setStatus("Copied short URL to clipboard.", "success");
+        } catch (error) {
+            console.error(error);
+            setStatus("Copy failed. You can still select the link manually.", "error");
+        }
+    }
+
+    shortenButton.addEventListener("click", handleShorten);
+    copyButton.addEventListener("click", copyShortUrl);
+    refreshAnalyticsButton.addEventListener("click", loadAnalytics);
+    longUrlInput.addEventListener("keydown", function (event) {
+        if (event.key === "Enter") {
+            handleShorten();
+        }
+    });
+
+    longUrlInput.addEventListener("input", function () {
+        if (!longUrlInput.value.trim()) {
+            setStatus("Ready when you are.", "");
+        }
+    });
+
+    loadAppConfig().finally(function () {
+        loadAnalytics();
+        analyticsRefreshTimer = window.setInterval(loadAnalytics, 2000);
+    });
+</script>
+</body>
+</html>
