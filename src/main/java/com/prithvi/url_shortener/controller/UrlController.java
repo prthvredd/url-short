@@ -1,7 +1,7 @@
 package com.prithvi.url_shortener.controller;
 
 import com.prithvi.url_shortener.service.UrlService;
-import dto.UrlRequest;
+import com.prithvi.url_shortener.dto.UrlRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.core.io.ClassPathResource;
@@ -13,8 +13,12 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 public class UrlController {
 
-    @Autowired
-    private UrlService service;
+    private final UrlService service;
+    // constructor injection is better than Autowired find and read on that
+
+    public UrlController(UrlService service) {
+        this.service = service;
+    }
 
     @GetMapping(value = "/", produces = MediaType.TEXT_HTML_VALUE)
     public ResponseEntity<Resource> home() {

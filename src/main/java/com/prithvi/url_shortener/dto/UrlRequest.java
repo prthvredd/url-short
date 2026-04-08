@@ -1,4 +1,4 @@
-package dto;
+package com.prithvi.url_shortener.dto;
 //typing this for getters and setters
 public class UrlRequest{
     private String longUrl;
