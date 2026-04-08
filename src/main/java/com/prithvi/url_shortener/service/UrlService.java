@@ -2,7 +2,7 @@ package com.prithvi.url_shortener.service;
 
 import com.prithvi.url_shortener.model.Url;
 import com.prithvi.url_shortener.repository.UrlRepository;
-import dto.UrlAnalyticsResponse;
+import com.prithvi.url_shortener.dto.UrlAnalyticsResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,7 +18,8 @@ import java.util.List;
 public class UrlService {
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
-    private static final char[] SHORT_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789".toCharArray();
+    private static final char[] SHORT_CODE_ALPHABET =
+            "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789".toCharArray();
     private static final int SHORT_CODE_LENGTH = 7;
     private static final SecureRandom RANDOM = new SecureRandom();
 

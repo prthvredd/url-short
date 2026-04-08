@@ -1,7 +1,7 @@
 package com.prithvi.url_shortener.config;
 
 import com.prithvi.url_shortener.service.UrlService;
-import dto.UrlAnalyticsResponse;
+import com.prithvi.url_shortener.dto.UrlAnalyticsResponse;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;

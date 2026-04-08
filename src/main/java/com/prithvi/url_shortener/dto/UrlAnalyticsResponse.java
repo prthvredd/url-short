@@ -1,4 +1,4 @@
-package dto;
+package com.prithvi.url_shortener.dto;
 
 public class UrlAnalyticsResponse {
 
